@@ -23,7 +23,7 @@ document.getElementById("form-login").addEventListener("submit", (e) => {
   const sesiBaru = {
     nis: nis,
     namaPeserta: `${nama} (${nis})`,
-    waktuSelesai: Date.now() + 30 * 60 * 1000,
+    waktuSelesai: Date.now() + 90 * 60 * 1000,
     indeksAktif: 0,
     jawaban: {}
   };
