@@ -137,7 +137,106 @@ async function muatHasilSiswa() {
     tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;text-align:center;color:#b91c1c;">${err.message}</td></tr>`;
   }
 }
+function parseSoalMassal(teks, mapelDefault) {
+  const barisList = String(teks || "")
+    .split(/\r?\n/)
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0);
 
+  const items = [];
+  const barisBermasalah = [];
+
+  barisList.forEach((baris, idx) => {
+    const bagian = baris.split("|").map((p) => p.trim());
+    if (bagian.length < 8) {
+      barisBermasalah.push(idx + 1);
+      return;
+    }
+
+    const [idSoal, mapel, pertanyaan, opsiA, opsiB, opsiC, opsiD, kunci, bobot] = bagian;
+    const kunciHuruf = String(kunci || "").toUpperCase();
+
+    if (!idSoal || !pertanyaan || !["A", "B", "C", "D"].includes(kunciHuruf)) {
+      barisBermasalah.push(idx + 1);
+      return;
+    }
+
+    items.push({
+      idSoal,
+      mapel: mapel || mapelDefault || "Umum",
+      pertanyaan,
+      opsiA: opsiA || "",
+      opsiB: opsiB || "",
+      opsiC: opsiC || "",
+      opsiD: opsiD || "",
+      kunci: kunciHuruf,
+      bobot: Number(bobot) > 0 ? Number(bobot) : 1
+    });
+  });
+
+  return { items, barisBermasalah };
+}
+
+const btnIsiContoh = document.getElementById("btn-isi-contoh");
+if (btnIsiContoh) {
+  btnIsiContoh.addEventListener("click", () => {
+    const mapelAwal = document.getElementById("s-mapel")?.value.trim() || "Kimia";
+    document.getElementById("s-massal").value = [
+      `SOAL01 | ${mapelAwal} | Contoh pertanyaan pilihan ganda pertama? | Pilihan A | Pilihan B | Pilihan C | Pilihan D | A | 1`,
+      `SOAL02 | ${mapelAwal} | Contoh pertanyaan pilihan ganda kedua? | Pilihan A | Pilihan B | Pilihan C | Pilihan D | C | 2`
+    ].join("\n");
+  });
+}
+
+const formUploadMassal = document.getElementById("form-upload-massal");
+if (formUploadMassal) {
+  formUploadMassal.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!kredensialGuru) return;
+
+    const textarea = document.getElementById("s-massal");
+    const statusMassal = document.getElementById("status-massal");
+    const btn = document.getElementById("btn-simpan-massal");
+    const mapelDefault = document.getElementById("s-mapel")?.value.trim() || "Umum";
+
+    const { items, barisBermasalah } = parseSoalMassal(textarea.value, mapelDefault);
+
+    if (items.length === 0) {
+      alert("Tidak ada baris soal valid. Pastikan format memiliki minimal 8 bagian dipisah tanda |");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = `Mengupload ${items.length} soal...`;
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "uploadSoal",
+          idGuru: kredensialGuru.idGuru,
+          kodeAkses: kredensialGuru.kodeAkses,
+          items
+        })
+      });
+      const hasil = await res.json();
+      if (hasil.status !== "success") throw new Error(hasil.message);
+
+      let pesan = hasil.message;
+      if (barisBermasalah.length > 0) {
+        pesan += ` (Baris diabaikan karena format kurang lengkap: ${barisBermasalah.join(", ")})`;
+      }
+      if (statusMassal) statusMassal.textContent = pesan;
+      textarea.value = "";
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Upload Semua Soal ke Google Sheets";
+    }
+  });
+}
 document.getElementById("btn-muat-hasil").addEventListener("click", muatHasilSiswa);
 
 document.getElementById("btn-export-csv").addEventListener("click", () => {
