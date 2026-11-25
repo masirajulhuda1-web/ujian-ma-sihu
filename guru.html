@@ -42,6 +42,32 @@
 
     <!-- Area Kerja Guru -->
     <section id="area-kerja-guru" style="display:none; flex-direction:column; gap:20px;">
+      <!-- Upload / Tempel Banyak Soal Sekaligus -->
+      <div class="panel-soal">
+        <h2 style="margin-bottom:8px;">Upload / Tempel Banyak Soal Sekaligus</h2>
+        <p style="font-size:0.86rem; color:#475569; margin-bottom:10px;">
+          Satu soal per baris dengan pemisah tanda <strong>|</strong>:
+          <code>ID_Soal | Mapel | Pertanyaan | Opsi A | Opsi B | Opsi C | Opsi D | Opsi E | Kunci | Bobot</code>
+        </p>
+        <form id="form-upload-massal" style="display:grid; gap:10px;">
+          <textarea
+            id="s-massal"
+            rows="5"
+            placeholder="KIM01 | Kimia | Apa lambang unsur Natrium? | Na | K | Fe | Cl | A | 1&#10;BAR01 | Bahasa Arab | Arti kata 'المعلم' adalah... | Siswa | Guru | Kepala Madrasah | Buku | B | 2"
+            required
+            style="padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-family:inherit;"
+          ></textarea>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="submit" id="btn-simpan-massal" class="tombol-masuk">
+              Upload Semua Soal ke Google Sheets
+            </button>
+            <button type="button" id="btn-isi-contoh" class="btn-sekunder">
+              Isi Contoh Format
+            </button>
+          </div>
+        </form>
+        <div id="status-massal" class="status-simpan"></div>
+      </div>
       <!-- Tambah Soal Satu per Satu -->
       <div class="panel-soal">
         <h2 style="margin-bottom:12px;">Tambah / Upload Soal Baru</h2>
@@ -55,6 +81,7 @@
               <option value="B">B</option>
               <option value="C">C</option>
               <option value="D">D</option>
+              <option value="E">E</option>
             </select>
             <input type="number" id="s-bobot" value="1" min="1" placeholder="Bobot" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;" />
           </div>
@@ -64,6 +91,7 @@
             <input type="text" id="s-b" placeholder="Opsi B" required style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;" />
             <input type="text" id="s-c" placeholder="Opsi C" required style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;" />
             <input type="text" id="s-d" placeholder="Opsi D" required style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;" />
+            <input type="text" id="s-e" placeholder="Opsi E" required style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;" />
           </div>
           <button type="submit" id="btn-simpan-soal" class="tombol-masuk">Simpan Soal ke Google Sheets</button>
         </form>
