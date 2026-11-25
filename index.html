@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBT - Madrasah Aliyah Sirajul Huda Marindi</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="kartu-login">
+    <img 
+      src="assets/logo-ma-sirajul-huda.png" 
+      alt="Logo MA Sirajul Huda Marindi" 
+      class="logo-sekolah"
+      style="width: 92px; height: 92px; object-fit: contain;"
+    />
+    <h1 class="nama-sekolah">Madrasah Aliyah Sirajul Huda Marindi</h1>
+    <p class="subjudul-app">Aplikasi Ujian Berbasis Komputer (CBT)</p>
+
+    <form id="form-login" class="form-login">
+      <div class="grup-input">
+        <label for="nis">Nomor Induk Siswa (NIS)</label>
+        <input type="text" id="nis" placeholder="Contoh: 2026001" required />
+      </div>
+
+      <div class="grup-input">
+        <label for="nama">Nama Lengkap</label>
+        <input type="text" id="nama" placeholder="Masukkan nama lengkap" required />
+      </div>
+
+      <div class="grup-input">
+        <label for="token">Token Ujian</label>
+        <input type="text" id="token" placeholder="Masukkan token (Uji coba: SIHU2026)" required />
+      </div>
+
+      <button type="submit" class="tombol-masuk">Masuk Ujian</button>
+    </form>
+
+    <footer class="footer-app">
+      <p>Madrasah Aliyah Sirajul Huda Marindi</p>
+      <p>Pengembang Aplikasi: <strong>Siti Aisyah</strong></p>
+    </footer>
+  </main>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>
