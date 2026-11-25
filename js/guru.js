@@ -34,6 +34,181 @@ document.getElementById("form-login-guru").addEventListener("submit", async (e) 
     }
 
     muatHasilSiswa();
+    let daftarSoalCache = [];
+let targetEditSoal = null;
+
+async function muatDaftarSoal() {
+  if (!kredensialGuru) return;
+  const mapelFilter = document.getElementById("filter-mapel-soal")?.value.trim() || "";
+  const tbody = document.getElementById("tbody-soal");
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="6" style="padding:12px;text-align:center;">Memuat daftar soal...</td></tr>`;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "getSoal",
+        idGuru: kredensialGuru.idGuru,
+        kodeAkses: kredensialGuru.kodeAkses,
+        mapelFilter
+      })
+    });
+    const hasil = await res.json();
+    if (hasil.status !== "success") throw new Error(hasil.message);
+
+    daftarSoalCache = hasil.data || [];
+    renderTabelSoal();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:12px;text-align:center;color:#b91c1c;">${err.message}</td></tr>`;
+  }
+}
+
+function renderTabelSoal() {
+  const tbody = document.getElementById("tbody-soal");
+  if (!tbody) return;
+
+  if (!daftarSoalCache.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:12px;text-align:center;">Belum ada soal tersimpan.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = "";
+  daftarSoalCache.forEach((s, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:600;">${s.idSoal}</td>
+      <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${s.mapel}</td>
+      <td style="padding:8px;border-bottom:1px solid #e2e8f0;max-width:380px;">
+        <div style="font-weight:600;margin-bottom:4px;">${s.pertanyaan}</div>
+        <div style="font-size:0.8rem;color:#475569;">
+          A. ${s.opsiA} | B. ${s.opsiB} | C. ${s.opsiC} | D. ${s.opsiD}
+        </div>
+      </td>
+      <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:700;">${s.kunci || "-"}</td>
+      <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${s.bobot}</td>
+      <td style="padding:8px;border-bottom:1px solid #e2e8f0;white-space:nowrap;">
+        <button type="button" class="btn-sekunder btn-edit-soal" data-index="${index}" style="padding:5px 9px;font-size:0.8rem;">Edit</button>
+        <button type="button" class="btn-hapus-soal" data-index="${index}" style="padding:5px 9px;font-size:0.8rem;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;">Hapus</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll(".btn-edit-soal").forEach((btn) => {
+    btn.addEventListener("click", () => bukaFormEditSoal(Number(btn.dataset.index)));
+  });
+
+  tbody.querySelectorAll(".btn-hapus-soal").forEach((btn) => {
+    btn.addEventListener("click", () => hapusSoalByIndex(Number(btn.dataset.index)));
+  });
+}
+
+function bukaFormEditSoal(index) {
+  const soal = daftarSoalCache[index];
+  if (!soal) return;
+
+  targetEditSoal = { idLama: soal.idSoal, mapelLama: soal.mapel };
+  document.getElementById("edit-id").value = soal.idSoal;
+  document.getElementById("edit-mapel").value = soal.mapel;
+  document.getElementById("edit-tanya").value = soal.pertanyaan;
+  document.getElementById("edit-a").value = soal.opsiA;
+  document.getElementById("edit-b").value = soal.opsiB;
+  document.getElementById("edit-c").value = soal.opsiC;
+  document.getElementById("edit-d").value = soal.opsiD;
+  document.getElementById("edit-kunci").value = soal.kunci || "A";
+  document.getElementById("edit-bobot").value = soal.bobot || 1;
+
+  const panelEdit = document.getElementById("panel-edit-soal");
+  panelEdit.style.display = "block";
+  panelEdit.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+document.getElementById("btn-batal-edit")?.addEventListener("click", () => {
+  targetEditSoal = null;
+  document.getElementById("panel-edit-soal").style.display = "none";
+});
+
+document.getElementById("form-edit-soal")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!kredensialGuru || !targetEditSoal) return;
+
+  const btn = document.getElementById("btn-simpan-edit");
+  btn.disabled = true;
+  btn.textContent = "Menyimpan perubahan...";
+
+  const soalBaru = {
+    idSoal: document.getElementById("edit-id").value.trim(),
+    mapel: document.getElementById("edit-mapel").value.trim(),
+    pertanyaan: document.getElementById("edit-tanya").value.trim(),
+    opsiA: document.getElementById("edit-a").value.trim(),
+    opsiB: document.getElementById("edit-b").value.trim(),
+    opsiC: document.getElementById("edit-c").value.trim(),
+    opsiD: document.getElementById("edit-d").value.trim(),
+    kunci: document.getElementById("edit-kunci").value,
+    bobot: Number(document.getElementById("edit-bobot").value) || 1
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "updateSoal",
+        idGuru: kredensialGuru.idGuru,
+        kodeAkses: kredensialGuru.kodeAkses,
+        idLama: targetEditSoal.idLama,
+        mapelLama: targetEditSoal.mapelLama,
+        soalBaru
+      })
+    });
+    const hasil = await res.json();
+    if (hasil.status !== "success") throw new Error(hasil.message);
+
+    document.getElementById("status-kelola-soal").textContent = hasil.message;
+    document.getElementById("panel-edit-soal").style.display = "none";
+    targetEditSoal = null;
+    await muatDaftarSoal();
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Simpan Perubahan Soal";
+  }
+});
+
+async function hapusSoalByIndex(index) {
+  const soal = daftarSoalCache[index];
+  if (!soal || !kredensialGuru) return;
+
+  const yakin = confirm(`Hapus soal "${soal.idSoal}" (${soal.mapel}) secara permanen dari BankSoal dan Kunci?`);
+  if (!yakin) return;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "deleteSoal",
+        idGuru: kredensialGuru.idGuru,
+        kodeAkses: kredensialGuru.kodeAkses,
+        idSoal: soal.idSoal,
+        mapel: soal.mapel
+      })
+    });
+    const hasil = await res.json();
+    if (hasil.status !== "success") throw new Error(hasil.message);
+
+    document.getElementById("status-kelola-soal").textContent = hasil.message;
+    await muatDaftarSoal();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById("btn-muat-soal")?.addEventListener("click", muatDaftarSoal);
   } catch (err) {
     alert(err.message);
   } finally {
