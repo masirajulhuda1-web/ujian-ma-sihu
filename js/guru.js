@@ -84,6 +84,7 @@ document.getElementById("form-upload-soal").addEventListener("submit", async (e)
     document.getElementById("s-b").value = "";
     document.getElementById("s-c").value = "";
     document.getElementById("s-d").value = "";
+    document.getElementById("s-e").value = "";
     document.getElementById("s-kunci").value = "";
   } catch (err) {
     alert(err.message);
@@ -157,7 +158,7 @@ function parseSoalMassal(teks, mapelDefault) {
     const [idSoal, mapel, pertanyaan, opsiA, opsiB, opsiC, opsiD, kunci, bobot] = bagian;
     const kunciHuruf = String(kunci || "").toUpperCase();
 
-    if (!idSoal || !pertanyaan || !["A", "B", "C", "D"].includes(kunciHuruf)) {
+    if (!idSoal || !pertanyaan || !["A", "B", "C", "D", "E"].includes(kunciHuruf)) {
       barisBermasalah.push(idx + 1);
       return;
     }
@@ -170,6 +171,7 @@ function parseSoalMassal(teks, mapelDefault) {
       opsiB: opsiB || "",
       opsiC: opsiC || "",
       opsiD: opsiD || "",
+      opsiD: opsiE || "",
       kunci: kunciHuruf,
       bobot: Number(bobot) > 0 ? Number(bobot) : 1
     });
@@ -183,8 +185,8 @@ if (btnIsiContoh) {
   btnIsiContoh.addEventListener("click", () => {
     const mapelAwal = document.getElementById("s-mapel")?.value.trim() || "Kimia";
     document.getElementById("s-massal").value = [
-      `SOAL01 | ${mapelAwal} | Contoh pertanyaan pilihan ganda pertama? | Pilihan A | Pilihan B | Pilihan C | Pilihan D | A | 1`,
-      `SOAL02 | ${mapelAwal} | Contoh pertanyaan pilihan ganda kedua? | Pilihan A | Pilihan B | Pilihan C | Pilihan D | C | 2`
+      `SOAL01 | ${mapelAwal} | Contoh pertanyaan pilihan ganda pertama? | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Pilihan E | A | 1`,
+      `SOAL02 | ${mapelAwal} | Contoh pertanyaan pilihan ganda kedua? | Pilihan A | Pilihan B | Pilihan C | Pilihan D | Pilihan E | C | 2`
     ].join("\n");
   });
 }
