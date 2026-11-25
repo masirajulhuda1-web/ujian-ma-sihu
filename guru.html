@@ -68,6 +68,64 @@
         </form>
         <div id="status-massal" class="status-simpan"></div>
       </div>
+      <!-- Daftar, Edit & Hapus Soal -->
+      <div class="panel-soal">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+          <h2>Daftar Soal Tersimpan</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="filter-mapel-soal" placeholder="Filter mapel (kosong = semua)" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;" />
+            <button type="button" id="btn-muat-soal" class="btn-sekunder">Muat Daftar Soal</button>
+          </div>
+        </div>
+
+        <!-- Form Edit Soal (muncul saat tombol Edit diklik) -->
+        <div id="panel-edit-soal" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:14px; margin-bottom:14px;">
+          <h3 style="margin-bottom:10px;">Edit Soal</h3>
+          <form id="form-edit-soal" style="display:grid; gap:10px;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+              <input type="text" id="edit-id" placeholder="ID Soal" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+              <input type="text" id="edit-mapel" placeholder="Mapel" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+              <select id="edit-kunci" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;">
+                <option value="A">Kunci: A</option>
+                <option value="B">Kunci: B</option>
+                <option value="C">Kunci: C</option>
+                <option value="D">Kunci: D</option>
+              </select>
+              <input type="number" id="edit-bobot" min="1" placeholder="Bobot" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+            </div>
+            <textarea id="edit-tanya" rows="2" placeholder="Pertanyaan soal" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></textarea>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:10px;">
+              <input type="text" id="edit-a" placeholder="Opsi A" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+              <input type="text" id="edit-b" placeholder="Opsi B" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+              <input type="text" id="edit-c" placeholder="Opsi C" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+              <input type="text" id="edit-d" placeholder="Opsi D" required style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;" />
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="submit" id="btn-simpan-edit" class="tombol-masuk">Simpan Perubahan Soal</button>
+              <button type="button" id="btn-batal-edit" class="btn-sekunder">Batal</button>
+            </div>
+          </form>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+            <thead>
+              <tr style="background:#f1f5f9; text-align:left;">
+                <th style="padding:8px; border-bottom:1px solid #cbd5e1;">ID</th>
+                <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Mapel</th>
+                <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Pertanyaan &amp; Opsi</th>
+                <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Kunci</th>
+                <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Bobot</th>
+                <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-soal">
+              <tr><td colspan="6" style="padding:12px; text-align:center;">Klik "Muat Daftar Soal" untuk melihat soal.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="status-kelola-soal" class="status-simpan"></div>
+      </div>
       <!-- Tambah Soal Satu per Satu -->
       <div class="panel-soal">
         <h2 style="margin-bottom:12px;">Tambah / Upload Soal Baru</h2>
