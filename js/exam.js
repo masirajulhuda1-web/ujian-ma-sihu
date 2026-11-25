@@ -1,6 +1,6 @@
 // js/exam.js
 const DURASI_MENIT = 90;
-const KUNCI_PENYIMPANAN = "cbt_ma_sihu_sesi_v1";
+"cbt_ma_sihu_sesi_v1";
 const BATAS_PINDAH_TAB = 3;
 
 const CONTOH_SOAL = [
