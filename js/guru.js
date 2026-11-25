@@ -58,6 +58,7 @@ document.getElementById("form-upload-soal").addEventListener("submit", async (e)
     opsiB: document.getElementById("s-b").value.trim(),
     opsiC: document.getElementById("s-c").value.trim(),
     opsiD: document.getElementById("s-d").value.trim(),
+    opsiE: document.getElementById("s-e").value.trim(),
     kunci: document.getElementById("s-kunci").value,
     bobot: Number(document.getElementById("s-bobot").value) || 1
   };
