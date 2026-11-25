@@ -304,11 +304,31 @@ body.halaman-ujian {
   -ms-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
-/* Samarkan soal jika halaman kehilangan fokus (misal pindah tab/aplikasi) */
-body.tersembunyi .wadah-ujian {
-  filter: blur(8px);
-  opacity: 0.35;
+/* Samarkan & kunci interaksi soal saat pindah tab/aplikasi atau terdeteksi upaya tangkap layar */
+body.tersembunyi .wadah-ujian,
+body.mode-tangkap-layar .wadah-ujian {
+  filter: blur(12px);
+  opacity: 0.15;
   pointer-events: none;
+  transition: filter 0.12s ease, opacity 0.12s ease;
+}
+
+/* Banner peringatan pelanggaran di atas area soal */
+.banner-peringatan {
+  display: none;
+  background-color: #fef2f2;
+  border: 1px solid #ef4444;
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.banner-peringatan.aktif {
+  display: block;
 }
