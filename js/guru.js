@@ -626,4 +626,55 @@ document.getElementById("form-upload-csv")?.addEventListener("submit", async (e)
     btn.disabled = false;
     btn.textContent = "Import CSV ke Google Sheets";
   }
+  document.getElementById("form-reset-ujian")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!kredensialGuru) return;
+
+  const nis = document.getElementById("reset-nis")?.value.trim() || "";
+  const mapel = document.getElementById("reset-mapel")?.value.trim() || "";
+  const btn = document.getElementById("btn-reset-ujian");
+  const statusEl = document.getElementById("status-reset");
+
+  if (!nis) {
+    alert("Masukkan NIS siswa terlebih dahulu.");
+    return;
+  }
+
+  const konfirmasi = confirm(
+    `Yakin ingin mereset ujian untuk NIS "${nis}"${mapel ? ` pada mapel "${mapel}"` : " pada semua mapel"}? Data di RekapNilai akan dihapus.`
+  );
+  if (!konfirmasi) return;
+
+  btn.disabled = true;
+  btn.textContent = "Mereset ujian...";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "resetUjian",
+        idGuru: kredensialGuru.idGuru,
+        kodeAkses: kredensialGuru.kodeAkses,
+        nis,
+        mapel
+      })
+    });
+    const hasil = await res.json();
+    if (hasil.status !== "success") throw new Error(hasil.message);
+
+    if (statusEl) statusEl.textContent = hasil.message;
+    document.getElementById("reset-nis").value = "";
+    document.getElementById("reset-mapel").value = "";
+
+    if (typeof muatHasilSiswa === "function") {
+      await muatHasilSiswa();
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Reset Ujian Siswa";
+  }
+});
 });
