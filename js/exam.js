@@ -54,7 +54,7 @@ function muatSesi() {
   const sesiBaru = {
     nis: "-",
     namaPeserta: "Peserta Uji Coba",
-    waktuSelesai: Date.now() + DURASI_MENIT * 60 * 1000,
+    waktuSelesai: Date.now() + DURASI_MENIT * 90 * 1000,
     indeksAktif: 0,
     jawaban: {},
     pelanggaran: 0
