@@ -42,6 +42,33 @@
 
     <!-- Area Kerja Guru -->
     <section id="area-kerja-guru" style="display:none; flex-direction:column; gap:20px;">
+      <!-- Upload Soal dari File CSV -->
+      <div class="panel-soal">
+        <h2 style="margin-bottom:8px;">Import Soal dari File CSV</h2>
+        <p style="font-size:0.86rem; color:#475569; margin-bottom:10px;">
+          Gunakan file <code>.csv</code> dengan urutan kolom:
+          <code>ID_Soal, Mapel, Pertanyaan, Opsi_A, Opsi_B, Opsi_C, Opsi_D, Opsi_E, Kunci, Bobot</code>
+        </p>
+
+        <form id="form-upload-csv" style="display:grid; gap:10px;">
+          <input
+            type="file"
+            id="file-soal-csv"
+            accept=".csv,text/csv"
+            required
+            style="padding:8px; border:1px dashed #94a3b8; border-radius:8px; background:#f8fafc;"
+          />
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="submit" id="btn-upload-csv" class="tombol-masuk">
+              Import CSV ke Google Sheets
+            </button>
+            <button type="button" id="btn-download-template-csv" class="btn-sekunder">
+              Download Template CSV
+            </button>
+          </div>
+        </form>
+        <div id="status-csv" class="status-simpan"></div>
+      </div>
       <!-- Upload / Tempel Banyak Soal Sekaligus -->
       <div class="panel-soal">
         <h2 style="margin-bottom:8px;">Upload / Tempel Banyak Soal Sekaligus</h2>
