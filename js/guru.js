@@ -1,8 +1,10 @@
 // js/guru.js
 let kredensialGuru = null;
 let dataHasilTerakhir = [];
+let daftarSoalCache = [];
+let targetEditSoal = null;
 
-document.getElementById("form-login-guru").addEventListener("submit", async (e) => {
+document.getElementById("form-login-guru")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const idGuru = document.getElementById("id-guru").value.trim();
   const kodeAkses = document.getElementById("kode-akses").value.trim();
@@ -23,19 +25,30 @@ document.getElementById("form-login-guru").addEventListener("submit", async (e) 
     }
 
     kredensialGuru = { idGuru, kodeAkses };
-    document.getElementById("info-guru").textContent =
-      `Guru: ${hasil.guru.namaGuru} (${hasil.guru.mapelAmpu || "Semua Mapel"})`;
+    const infoGuru = document.getElementById("info-guru");
+    if (infoGuru) {
+      infoGuru.textContent = `Guru: ${hasil.guru.namaGuru} (${hasil.guru.mapelAmpu || "Semua Mapel"})`;
+    }
+
     document.getElementById("panel-login-guru").style.display = "none";
     document.getElementById("area-kerja-guru").style.display = "flex";
 
     if (hasil.guru.mapelAmpu && hasil.guru.mapelAmpu.toUpperCase() !== "SEMUA") {
-      document.getElementById("s-mapel").value = hasil.guru.mapelAmpu;
-      document.getElementById("filter-mapel-hasil").value = hasil.guru.mapelAmpu;
+      const sMapel = document.getElementById("s-mapel");
+      const filterHasil = document.getElementById("filter-mapel-hasil");
+      if (sMapel) sMapel.value = hasil.guru.mapelAmpu;
+      if (filterHasil) filterHasil.value = hasil.guru.mapelAmpu;
     }
 
-    muatHasilSiswa();
-    let daftarSoalCache = [];
-let targetEditSoal = null;
+    await muatHasilSiswa();
+    await muatDaftarSoal();
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Masuk Panel Guru";
+  }
+});
 
 async function muatDaftarSoal() {
   if (!kredensialGuru) return;
@@ -77,6 +90,7 @@ function renderTabelSoal() {
 
   tbody.innerHTML = "";
   daftarSoalCache.forEach((s, index) => {
+    const opsiE = s.opsiE ? ` | E. ${s.opsiE}` : "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:600;">${s.idSoal}</td>
@@ -84,7 +98,7 @@ function renderTabelSoal() {
       <td style="padding:8px;border-bottom:1px solid #e2e8f0;max-width:380px;">
         <div style="font-weight:600;margin-bottom:4px;">${s.pertanyaan}</div>
         <div style="font-size:0.8rem;color:#475569;">
-          A. ${s.opsiA} | B. ${s.opsiB} | C. ${s.opsiC} | D. ${s.opsiD}
+          A. ${s.opsiA} | B. ${s.opsiB} | C. ${s.opsiC} | D. ${s.opsiD}${opsiE}
         </div>
       </td>
       <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:700;">${s.kunci || "-"}</td>
@@ -114,10 +128,14 @@ function bukaFormEditSoal(index) {
   document.getElementById("edit-id").value = soal.idSoal;
   document.getElementById("edit-mapel").value = soal.mapel;
   document.getElementById("edit-tanya").value = soal.pertanyaan;
-  document.getElementById("edit-a").value = soal.opsiA;
-  document.getElementById("edit-b").value = soal.opsiB;
-  document.getElementById("edit-c").value = soal.opsiC;
-  document.getElementById("edit-d").value = soal.opsiD;
+  document.getElementById("edit-a").value = soal.opsiA || "";
+  document.getElementById("edit-b").value = soal.opsiB || "";
+  document.getElementById("edit-c").value = soal.opsiC || "";
+  document.getElementById("edit-d").value = soal.opsiD || "";
+
+  const editE = document.getElementById("edit-e");
+  if (editE) editE.value = soal.opsiE || "";
+
   document.getElementById("edit-kunci").value = soal.kunci || "A";
   document.getElementById("edit-bobot").value = soal.bobot || 1;
 
@@ -147,6 +165,7 @@ document.getElementById("form-edit-soal")?.addEventListener("submit", async (e) 
     opsiB: document.getElementById("edit-b").value.trim(),
     opsiC: document.getElementById("edit-c").value.trim(),
     opsiD: document.getElementById("edit-d").value.trim(),
+    opsiE: document.getElementById("edit-e")?.value.trim() || "",
     kunci: document.getElementById("edit-kunci").value,
     bobot: Number(document.getElementById("edit-bobot").value) || 1
   };
@@ -209,15 +228,8 @@ async function hapusSoalByIndex(index) {
 }
 
 document.getElementById("btn-muat-soal")?.addEventListener("click", muatDaftarSoal);
-  } catch (err) {
-    alert(err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Masuk Panel Guru";
-  }
-});
 
-document.getElementById("form-upload-soal").addEventListener("submit", async (e) => {
+document.getElementById("form-upload-soal")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!kredensialGuru) return;
 
@@ -233,7 +245,7 @@ document.getElementById("form-upload-soal").addEventListener("submit", async (e)
     opsiB: document.getElementById("s-b").value.trim(),
     opsiC: document.getElementById("s-c").value.trim(),
     opsiD: document.getElementById("s-d").value.trim(),
-    opsiE: document.getElementById("s-e").value.trim(),
+    opsiE: document.getElementById("s-e")?.value.trim() || "",
     kunci: document.getElementById("s-kunci").value,
     bobot: Number(document.getElementById("s-bobot").value) || 1
   };
@@ -259,8 +271,9 @@ document.getElementById("form-upload-soal").addEventListener("submit", async (e)
     document.getElementById("s-b").value = "";
     document.getElementById("s-c").value = "";
     document.getElementById("s-d").value = "";
-    document.getElementById("s-e").value = "";
+    if (document.getElementById("s-e")) document.getElementById("s-e").value = "";
     document.getElementById("s-kunci").value = "";
+    await muatDaftarSoal();
   } catch (err) {
     alert(err.message);
   } finally {
@@ -271,8 +284,9 @@ document.getElementById("form-upload-soal").addEventListener("submit", async (e)
 
 async function muatHasilSiswa() {
   if (!kredensialGuru) return;
-  const mapelFilter = document.getElementById("filter-mapel-hasil").value.trim();
+  const mapelFilter = document.getElementById("filter-mapel-hasil")?.value.trim() || "";
   const tbody = document.getElementById("tbody-hasil");
+  if (!tbody) return;
   tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;text-align:center;">Memuat hasil...</td></tr>`;
 
   try {
@@ -314,6 +328,7 @@ async function muatHasilSiswa() {
     tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;text-align:center;color:#b91c1c;">${err.message}</td></tr>`;
   }
 }
+
 function parseSoalMassal(teks, mapelDefault) {
   const barisList = String(teks || "")
     .split(/\r?\n/)
@@ -330,8 +345,17 @@ function parseSoalMassal(teks, mapelDefault) {
       return;
     }
 
-    const [idSoal, mapel, pertanyaan, opsiA, opsiB, opsiC, opsiD, kunci, bobot] = bagian;
-    const kunciHuruf = String(kunci || "").toUpperCase();
+    const punyaOpsiE = bagian.length >= 10;
+    const idSoal = bagian[0];
+    const mapel = bagian[1] || mapelDefault || "Umum";
+    const pertanyaan = bagian[2];
+    const opsiA = bagian[3] || "";
+    const opsiB = bagian[4] || "";
+    const opsiC = bagian[5] || "";
+    const opsiD = bagian[6] || "";
+    const opsiE = punyaOpsiE ? bagian[7] || "" : "";
+    const kunciHuruf = String(punyaOpsiE ? bagian[8] : bagian[7] || "").toUpperCase();
+    const bobot = punyaOpsiE ? bagian[9] : bagian[8];
 
     if (!idSoal || !pertanyaan || !["A", "B", "C", "D", "E"].includes(kunciHuruf)) {
       barisBermasalah.push(idx + 1);
@@ -340,13 +364,13 @@ function parseSoalMassal(teks, mapelDefault) {
 
     items.push({
       idSoal,
-      mapel: mapel || mapelDefault || "Umum",
+      mapel,
       pertanyaan,
-      opsiA: opsiA || "",
-      opsiB: opsiB || "",
-      opsiC: opsiC || "",
-      opsiD: opsiD || "",
-      opsiD: opsiE || "",
+      opsiA,
+      opsiB,
+      opsiC,
+      opsiD,
+      opsiE,
       kunci: kunciHuruf,
       bobot: Number(bobot) > 0 ? Number(bobot) : 1
     });
@@ -407,6 +431,7 @@ if (formUploadMassal) {
       }
       if (statusMassal) statusMassal.textContent = pesan;
       textarea.value = "";
+      await muatDaftarSoal();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -415,9 +440,10 @@ if (formUploadMassal) {
     }
   });
 }
-document.getElementById("btn-muat-hasil").addEventListener("click", muatHasilSiswa);
 
-document.getElementById("btn-export-csv").addEventListener("click", () => {
+document.getElementById("btn-muat-hasil")?.addEventListener("click", muatHasilSiswa);
+
+document.getElementById("btn-export-csv")?.addEventListener("click", () => {
   if (!dataHasilTerakhir.length) {
     alert("Tidak ada data untuk diunduh.");
     return;
@@ -436,7 +462,9 @@ document.getElementById("btn-export-csv").addEventListener("click", () => {
   a.download = "rekap-hasil-ujian-cbt.csv";
   a.click();
   URL.revokeObjectURL(url);
-  function deteksiDelimiterCsv(barisHeader) {
+});
+
+function deteksiDelimiterCsv(barisHeader) {
   const jumlahTitikKoma = (barisHeader.match(/;/g) || []).length;
   const jumlahKoma = (barisHeader.match(/,/g) || []).length;
   return jumlahTitikKoma > jumlahKoma ? ";" : ",";
@@ -485,7 +513,6 @@ function parseFileCsvKeSoal(teksCsv, mapelDefault) {
   barisList.forEach((baris, idx) => {
     const kolom = parseBarisCsv(baris, delimiter);
 
-    // Lewati baris header jika baris pertama berisi nama kolom
     if (idx === 0 && String(kolom[0] || "").toLowerCase().includes("id_soal")) {
       return;
     }
@@ -495,7 +522,6 @@ function parseFileCsvKeSoal(teksCsv, mapelDefault) {
       return;
     }
 
-    // Mendukung 10 kolom (dengan Opsi_E) maupun 9 kolom (tanpa Opsi_E)
     const punyaOpsiE = kolom.length >= 10;
     const idSoal = kolom[0];
     const mapel = kolom[1] || mapelDefault || "Umum";
@@ -593,14 +619,11 @@ document.getElementById("form-upload-csv")?.addEventListener("submit", async (e)
     if (statusCsv) statusCsv.textContent = pesan;
     inputFile.value = "";
 
-    if (typeof muatDaftarSoal === "function") {
-      await muatDaftarSoal();
-    }
+    await muatDaftarSoal();
   } catch (err) {
     alert(err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = "Import CSV ke Google Sheets";
   }
-});
 });
