@@ -436,4 +436,171 @@ document.getElementById("btn-export-csv").addEventListener("click", () => {
   a.download = "rekap-hasil-ujian-cbt.csv";
   a.click();
   URL.revokeObjectURL(url);
+  function deteksiDelimiterCsv(barisHeader) {
+  const jumlahTitikKoma = (barisHeader.match(/;/g) || []).length;
+  const jumlahKoma = (barisHeader.match(/,/g) || []).length;
+  return jumlahTitikKoma > jumlahKoma ? ";" : ",";
+}
+
+function parseBarisCsv(baris, delimiter) {
+  const hasil = [];
+  let nilai = "";
+  let dalamKutip = false;
+
+  for (let i = 0; i < baris.length; i++) {
+    const ch = baris[i];
+    const next = baris[i + 1];
+
+    if (ch === '"' && dalamKutip && next === '"') {
+      nilai += '"';
+      i++;
+    } else if (ch === '"') {
+      dalamKutip = !dalamKutip;
+    } else if (ch === delimiter && !dalamKutip) {
+      hasil.push(nilai.trim());
+      nilai = "";
+    } else {
+      nilai += ch;
+    }
+  }
+  hasil.push(nilai.trim());
+  return hasil;
+}
+
+function parseFileCsvKeSoal(teksCsv, mapelDefault) {
+  const bersihBom = String(teksCsv || "").replace(/^\uFEFF/, "");
+  const barisList = bersihBom
+    .split(/\r?\n/)
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0);
+
+  if (barisList.length === 0) {
+    return { items: [], barisBermasalah: [] };
+  }
+
+  const delimiter = deteksiDelimiterCsv(barisList[0]);
+  const items = [];
+  const barisBermasalah = [];
+
+  barisList.forEach((baris, idx) => {
+    const kolom = parseBarisCsv(baris, delimiter);
+
+    // Lewati baris header jika baris pertama berisi nama kolom
+    if (idx === 0 && String(kolom[0] || "").toLowerCase().includes("id_soal")) {
+      return;
+    }
+
+    if (kolom.length < 8) {
+      barisBermasalah.push(idx + 1);
+      return;
+    }
+
+    // Mendukung 10 kolom (dengan Opsi_E) maupun 9 kolom (tanpa Opsi_E)
+    const punyaOpsiE = kolom.length >= 10;
+    const idSoal = kolom[0];
+    const mapel = kolom[1] || mapelDefault || "Umum";
+    const pertanyaan = kolom[2];
+    const opsiA = kolom[3] || "";
+    const opsiB = kolom[4] || "";
+    const opsiC = kolom[5] || "";
+    const opsiD = kolom[6] || "";
+    const opsiE = punyaOpsiE ? kolom[7] || "" : "";
+    const kunci = String(punyaOpsiE ? kolom[8] : kolom[7] || "").toUpperCase();
+    const bobot = punyaOpsiE ? kolom[9] : kolom[8];
+
+    if (!idSoal || !pertanyaan || !["A", "B", "C", "D", "E"].includes(kunci)) {
+      barisBermasalah.push(idx + 1);
+      return;
+    }
+
+    items.push({
+      idSoal,
+      mapel,
+      pertanyaan,
+      opsiA,
+      opsiB,
+      opsiC,
+      opsiD,
+      opsiE,
+      kunci,
+      bobot: Number(bobot) > 0 ? Number(bobot) : 1
+    });
+  });
+
+  return { items, barisBermasalah };
+}
+
+document.getElementById("btn-download-template-csv")?.addEventListener("click", () => {
+  const mapelContoh = document.getElementById("s-mapel")?.value.trim() || "Kimia";
+  const isiTemplate = [
+    "ID_Soal,Mapel,Pertanyaan,Opsi_A,Opsi_B,Opsi_C,Opsi_D,Opsi_E,Kunci,Bobot",
+    `SOAL01,${mapelContoh},"Lambang unsur Natrium adalah...",Na,K,Fe,Cl,Mg,A,1`,
+    `SOAL02,${mapelContoh},"Rumus kimia air adalah...",CO2,H2O,NaCl,O2,H2SO4,B,2`
+  ].join("\n");
+
+  const blob = new Blob(["\uFEFF" + isiTemplate], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `template_soal_${mapelContoh.toLowerCase().replace(/\s+/g, "_")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("form-upload-csv")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!kredensialGuru) return;
+
+  const inputFile = document.getElementById("file-soal-csv");
+  const statusCsv = document.getElementById("status-csv");
+  const btn = document.getElementById("btn-upload-csv");
+  const mapelDefault = document.getElementById("s-mapel")?.value.trim() || "Umum";
+
+  const file = inputFile?.files?.[0];
+  if (!file) {
+    alert("Pilih file .csv terlebih dahulu.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Membaca & mengupload CSV...";
+
+  try {
+    const isiTeks = await file.text();
+    const { items, barisBermasalah } = parseFileCsvKeSoal(isiTeks, mapelDefault);
+
+    if (items.length === 0) {
+      throw new Error("Tidak ada baris soal valid di file CSV. Unduh template CSV untuk melihat format yang benar.");
+    }
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "uploadSoal",
+        idGuru: kredensialGuru.idGuru,
+        kodeAkses: kredensialGuru.kodeAkses,
+        items
+      })
+    });
+    const hasil = await res.json();
+    if (hasil.status !== "success") throw new Error(hasil.message);
+
+    let pesan = hasil.message;
+    if (barisBermasalah.length > 0) {
+      pesan += ` (Baris dilewati karena format tidak valid: ${barisBermasalah.join(", ")})`;
+    }
+    if (statusCsv) statusCsv.textContent = pesan;
+    inputFile.value = "";
+
+    if (typeof muatDaftarSoal === "function") {
+      await muatDaftarSoal();
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Import CSV ke Google Sheets";
+  }
+});
 });
