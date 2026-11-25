@@ -1,6 +1,7 @@
 // js/exam.js
-const DURASI_MENIT = 30;
+const DURASI_MENIT = 90;
 const KUNCI_PENYIMPANAN = "cbt_ma_sihu_sesi_v1";
+const BATAS_PINDAH_TAB = 3;
 
 const CONTOH_SOAL = [
   {
@@ -55,7 +56,8 @@ function muatSesi() {
     namaPeserta: "Peserta Uji Coba",
     waktuSelesai: Date.now() + DURASI_MENIT * 60 * 1000,
     indeksAktif: 0,
-    jawaban: {}
+    jawaban: {},
+    pelanggaran: 0
   };
 
   localStorage.setItem(KUNCI_PENYIMPANAN, JSON.stringify(sesiBaru));
@@ -63,8 +65,11 @@ function muatSesi() {
 }
 
 let sesi = muatSesi();
+let jumlahPelanggaran = Number(sesi.pelanggaran || 0);
+let sedangProsesKirim = false;
 
 function simpanSesi() {
+  sesi.pelanggaran = jumlahPelanggaran;
   localStorage.setItem(KUNCI_PENYIMPANAN, JSON.stringify(sesi));
 }
 
@@ -155,6 +160,9 @@ function perbaruiTimer() {
 }
 
 function selesaikanUjian(otomatis = false) {
+  sedangProsesKirim = true;
+  clearInterval(intervalTimer);
+
   let benar = 0;
   CONTOH_SOAL.forEach((soal) => {
     if (sesi.jawaban[soal.id] === soal.kunci) {
@@ -163,16 +171,52 @@ function selesaikanUjian(otomatis = false) {
   });
 
   const nilai = Math.round((benar / CONTOH_SOAL.length) * 100);
-  const pembuka = otomatis ? "Waktu habis!\n" : "Ujian selesai!\n";
+  const pembuka = otomatis ? "Waktu habis / ujian dikumpulkan otomatis!\n" : "Ujian selesai!\n";
 
   alert(
     `${pembuka}Peserta: ${sesi.namaPeserta}\n` +
     `Jawaban Benar: ${benar} dari ${CONTOH_SOAL.length}\n` +
+    `Pelanggaran Layar: ${jumlahPelanggaran}x\n` +
     `Nilai Akhir: ${nilai}`
   );
 
   localStorage.removeItem(KUNCI_PENYIMPANAN);
   window.location.href = "index.html";
+}
+
+function tampilkanPeringatan(pesan) {
+  const banner = document.getElementById("banner-peringatan");
+  if (banner) {
+    banner.textContent = pesan;
+    banner.classList.add("aktif");
+  }
+  const statusEl = document.getElementById("status-simpan");
+  if (statusEl) {
+    statusEl.textContent = pesan;
+  }
+}
+
+function catatPelanggaran(alasan) {
+  if (sedangProsesKirim) return;
+
+  jumlahPelanggaran += 1;
+  simpanSesi();
+
+  const sisaKesempatan = BATAS_PINDAH_TAB - jumlahPelanggaran;
+
+  if (jumlahPelanggaran >= BATAS_PINDAH_TAB) {
+    alert(
+      `Batas pelanggaran (${BATAS_PINDAH_TAB}x) tercapai karena ${alasan}.\n` +
+      `Ujian akan otomatis dikumpulkan sekarang.`
+    );
+    selesaikanUjian(true);
+    return;
+  }
+
+  tampilkanPeringatan(
+    `Peringatan (${jumlahPelanggaran}/${BATAS_PINDAH_TAB}): Terdeteksi ${alasan}. ` +
+    `Sisa kesempatan: ${sisaKesempatan}x sebelum ujian otomatis dikumpulkan.`
+  );
 }
 
 document.getElementById("btn-prev").addEventListener("click", () => {
@@ -199,64 +243,6 @@ document.getElementById("btn-selesai").addEventListener("click", () => {
   }
 });
 
-["copy", "cut", "contextmenu"].forEach((namaEvent) => {
-  document.addEventListener(namaEvent, (e) => {
-    e.preventDefault();
-  });
-});
-
-let jumlahPelanggaran = 0;
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    document.body.classList.add("tersembunyi");
-    jumlahPelanggaran += 1;
-  } else {
-    document.body.classList.remove("tersembunyi");
-    if (jumlahPelanggaran > 0) {
-      document.getElementById("status-simpan").textContent =
-        `Peringatan: terdeteksi keluar layar ujian (${jumlahPelanggaran}x).`;
-      // Batas maksimal keluar tab / pindah aplikasi selama ujian
-const BATAS_PINDAH_TAB = 3;
-let jumlahPelanggaran = Number(sesi.pelanggaran || 0);
-let sedangProsesKirim = false;
-
-function tampilkanPeringatan(pesan) {
-  const banner = document.getElementById("banner-peringatan");
-  if (banner) {
-    banner.textContent = pesan;
-    banner.classList.add("aktif");
-  }
-  const statusEl = document.getElementById("status-simpan");
-  if (statusEl) {
-    statusEl.textContent = pesan;
-  }
-}
-
-function catatPelanggaran(alasan) {
-  if (sedangProsesKirim) return;
-
-  jumlahPelanggaran += 1;
-  sesi.pelanggaran = jumlahPelanggaran;
-  simpanSesi();
-
-  const sisaKesempatan = BATAS_PINDAH_TAB - jumlahPelanggaran;
-
-  if (jumlahPelanggaran >= BATAS_PINDAH_TAB) {
-    sedangProsesKirim = true;
-    alert(
-      `Batas pelanggaran (${BATAS_PINDAH_TAB}x) tercapai karena ${alasan}.\n` +
-      `Ujian akan otomatis dikumpulkan sekarang.`
-    );
-    selesaikanUjian(true);
-    return;
-  }
-
-  tampilkanPeringatan(
-    `Peringatan (${jumlahPelanggaran}/${BATAS_PINDAH_TAB}): Terdeteksi ${alasan}. ` +
-    `Sisa kesempatan: ${sisaKesempatan}x sebelum ujian otomatis dikumpulkan.`
-  );
-}
-
 // Blokir copy, cut, drag, dan klik kanan / tekan lama menu konteks
 ["copy", "cut", "dragstart", "contextmenu"].forEach((namaEvent) => {
   document.addEventListener(namaEvent, (e) => {
@@ -267,7 +253,8 @@ function catatPelanggaran(alasan) {
 // Deteksi tombol PrintScreen / kombinasi tangkap layar di keyboard
 window.addEventListener("keydown", (e) => {
   const adalahPrintScreen = e.key === "PrintScreen" || e.code === "PrintScreen";
-  const adalahSnipShortcut = (e.ctrlKey || e.metaKey) && e.shiftKey && ["s", "x"].includes(e.key.toLowerCase());
+  const adalahSnipShortcut =
+    (e.ctrlKey || e.metaKey) && e.shiftKey && ["s", "x"].includes(e.key.toLowerCase());
 
   if (adalahPrintScreen || adalahSnipShortcut) {
     e.preventDefault();
@@ -296,9 +283,6 @@ window.addEventListener("blur", () => {
 
 window.addEventListener("focus", () => {
   document.body.classList.remove("mode-tangkap-layar");
-});
-    }
-  }
 });
 
 tampilkanSoal();
