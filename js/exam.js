@@ -6,45 +6,6 @@ const KUNCI_STORAGE =
     : "cbt_ma_sihu_sesi_v1";
 const BATAS_PINDAH_TAB = 3;
 
-const CONTOH_SOAL = [
-  {
-    id: "S1",
-    pertanyaan: "Apa kepanjangan dari CBT dalam konteks ujian berbasis komputer?",
-    opsi: {
-      A: "Computer-Based Test",
-      B: "Centralized Browser Tool",
-      C: "Class Basic Training",
-      D: "Computerized Book Tab",
-      E: "Centralized Binary Terminal"
-    },
-    kunci: "A"
-  },
-  {
-    id: "S2",
-    pertanyaan: "Di mana madrasah ini berada?",
-    opsi: {
-      A: "Marindi",
-      B: "Bandung",
-      C: "Yogyakarta",
-      D: "Surabaya",
-      E: "Banjarmasin"
-    },
-    kunci: "A"
-  },
-  {
-    id: "S3",
-    pertanyaan: "Mengapa jawaban siswa perlu disimpan otomatis saat ujian berlangsung?",
-    opsi: {
-      A: "Agar layar berubah warna",
-      B: "Agar jawaban tidak hilang jika koneksi terputus atau halaman ter-refresh",
-      C: "Agar timer berhenti selamanya",
-      D: "Agar soal terhapus otomatis",
-      E: "Agar halaman login tertutup"
-    },
-    kunci: "B"
-  }
-];
-
 function muatSesi() {
   let tersimpan = null;
   try {
@@ -62,10 +23,10 @@ function muatSesi() {
     nama: "Peserta Uji Coba",
     kelas: "-",
     namaPeserta: "Peserta Uji Coba",
-    mapel: "Umum",
+    mapel: "-",
     durasiMenit: DURASI_MENIT,
     waktuSelesai: Date.now() + DURASI_MENIT * 60 * 1000,
-    soalList: CONTOH_SOAL,
+    soalList: [],
     indeksAktif: 0,
     jawaban: {},
     pelanggaran: 0
@@ -76,8 +37,7 @@ function muatSesi() {
 }
 
 let sesi = muatSesi();
-const daftarSoalAktif =
-  Array.isArray(sesi.soalList) && sesi.soalList.length > 0 ? sesi.soalList : CONTOH_SOAL;
+const daftarSoalAktif = Array.isArray(sesi.soalList) ? sesi.soalList : [];
 let jumlahPelanggaran = Number(sesi.pelanggaran || 0);
 let sedangProsesKirim = false;
 
@@ -111,14 +71,25 @@ async function kirimAutosaveKeServer() {
 }
 
 function tampilkanSoal() {
+  document.getElementById("info-peserta").textContent =
+    `Peserta: ${sesi.namaPeserta || sesi.nama || "-"}`;
+
+  if (!daftarSoalAktif.length) {
+    document.getElementById("nomor-soal-label").textContent = "Soal tidak ditemukan";
+    document.getElementById("teks-pertanyaan").textContent =
+      `Belum ada soal untuk mata pelajaran "${sesi.mapel || "-"}" di BankSoal atau nama mapel belum cocok. Silakan login ulang dari halaman utama.`;
+    document.getElementById("daftar-opsi").innerHTML = "";
+    document.getElementById("btn-prev").disabled = true;
+    document.getElementById("btn-next").disabled = true;
+    return;
+  }
+
   if (sesi.indeksAktif < 0) sesi.indeksAktif = 0;
   if (sesi.indeksAktif >= daftarSoalAktif.length) {
     sesi.indeksAktif = daftarSoalAktif.length - 1;
   }
 
   const soal = daftarSoalAktif[sesi.indeksAktif] || daftarSoalAktif[0];
-  document.getElementById("info-peserta").textContent =
-    `Peserta: ${sesi.namaPeserta || sesi.nama || "-"}`;
   document.getElementById("nomor-soal-label").textContent =
     `Soal ${sesi.indeksAktif + 1} dari ${daftarSoalAktif.length}`;
   document.getElementById("teks-pertanyaan").textContent = soal.pertanyaan;
@@ -170,6 +141,11 @@ function tampilkanGridNomor() {
   const grid = document.getElementById("grid-nomor");
   grid.innerHTML = "";
 
+  if (!daftarSoalAktif.length) {
+    grid.innerHTML = `<div style="font-size:0.85rem;color:#64748b;">Tidak ada nomor soal.</div>`;
+    return;
+  }
+
   daftarSoalAktif.forEach((soal, idx) => {
     const tombol = document.createElement("button");
     tombol.type = "button";
@@ -215,15 +191,14 @@ async function selesaikanUjian(otomatis = false) {
   simpanSesi();
 
   let nilaiServer = null;
-  let benarLokal = 0;
 
-  daftarSoalAktif.forEach((soal) => {
-    if (soal.kunci && sesi.jawaban[soal.id] === soal.kunci) {
-      benarLokal += 1;
-    }
-  });
-
-  if (typeof API_URL !== "undefined" && API_URL && !API_URL.includes("TEMPEL_") && sesi.nis && sesi.nis !== "-") {
+  if (
+    typeof API_URL !== "undefined" &&
+    API_URL &&
+    !API_URL.includes("TEMPEL_") &&
+    sesi.nis &&
+    sesi.nis !== "-"
+  ) {
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -243,18 +218,17 @@ async function selesaikanUjian(otomatis = false) {
         nilaiServer = hasil.nilai;
       }
     } catch (e) {
-      // Fallback ke perhitungan lokal jika gagal kontak server
+      // Fallback jika gagal menghubungi server
     }
   }
 
-  const nilaiTampil =
-    nilaiServer !== null ? nilaiServer : Math.round((benarLokal / daftarSoalAktif.length) * 100);
   const pembuka = otomatis ? "Waktu habis / ujian dikumpulkan otomatis!\n" : "Ujian selesai!\n";
+  const infoNilai = nilaiServer !== null ? `Nilai Akhir: ${nilaiServer}\n` : "Jawaban telah dikirim.\n";
 
   alert(
     `${pembuka}Peserta: ${sesi.namaPeserta || sesi.nama}\n` +
     `Pelanggaran Layar: ${jumlahPelanggaran}x\n` +
-    `Nilai Akhir: ${nilaiTampil}`
+    infoNilai
   );
 
   localStorage.removeItem(KUNCI_STORAGE);
