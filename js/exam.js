@@ -215,6 +215,88 @@ document.addEventListener("visibilitychange", () => {
     if (jumlahPelanggaran > 0) {
       document.getElementById("status-simpan").textContent =
         `Peringatan: terdeteksi keluar layar ujian (${jumlahPelanggaran}x).`;
+      // Batas maksimal keluar tab / pindah aplikasi selama ujian
+const BATAS_PINDAH_TAB = 3;
+let jumlahPelanggaran = Number(sesi.pelanggaran || 0);
+let sedangProsesKirim = false;
+
+function tampilkanPeringatan(pesan) {
+  const banner = document.getElementById("banner-peringatan");
+  if (banner) {
+    banner.textContent = pesan;
+    banner.classList.add("aktif");
+  }
+  const statusEl = document.getElementById("status-simpan");
+  if (statusEl) {
+    statusEl.textContent = pesan;
+  }
+}
+
+function catatPelanggaran(alasan) {
+  if (sedangProsesKirim) return;
+
+  jumlahPelanggaran += 1;
+  sesi.pelanggaran = jumlahPelanggaran;
+  simpanSesi();
+
+  const sisaKesempatan = BATAS_PINDAH_TAB - jumlahPelanggaran;
+
+  if (jumlahPelanggaran >= BATAS_PINDAH_TAB) {
+    sedangProsesKirim = true;
+    alert(
+      `Batas pelanggaran (${BATAS_PINDAH_TAB}x) tercapai karena ${alasan}.\n` +
+      `Ujian akan otomatis dikumpulkan sekarang.`
+    );
+    selesaikanUjian(true);
+    return;
+  }
+
+  tampilkanPeringatan(
+    `Peringatan (${jumlahPelanggaran}/${BATAS_PINDAH_TAB}): Terdeteksi ${alasan}. ` +
+    `Sisa kesempatan: ${sisaKesempatan}x sebelum ujian otomatis dikumpulkan.`
+  );
+}
+
+// Blokir copy, cut, drag, dan klik kanan / tekan lama menu konteks
+["copy", "cut", "dragstart", "contextmenu"].forEach((namaEvent) => {
+  document.addEventListener(namaEvent, (e) => {
+    e.preventDefault();
+  });
+});
+
+// Deteksi tombol PrintScreen / kombinasi tangkap layar di keyboard
+window.addEventListener("keydown", (e) => {
+  const adalahPrintScreen = e.key === "PrintScreen" || e.code === "PrintScreen";
+  const adalahSnipShortcut = (e.ctrlKey || e.metaKey) && e.shiftKey && ["s", "x"].includes(e.key.toLowerCase());
+
+  if (adalahPrintScreen || adalahSnipShortcut) {
+    e.preventDefault();
+    document.body.classList.add("mode-tangkap-layar");
+    setTimeout(() => {
+      document.body.classList.remove("mode-tangkap-layar");
+    }, 2500);
+    catatPelanggaran("upaya tangkap layar (screenshot)");
+  }
+});
+
+// Deteksi saat siswa berpindah tab, meminimalkan browser, atau pindah aplikasi di HP
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    document.body.classList.add("tersembunyi");
+  } else {
+    document.body.classList.remove("tersembunyi");
+    catatPelanggaran("keluar dari halaman ujian / pindah tab");
+  }
+});
+
+// Deteksi kehilangan fokus jendela (misal split screen / pop-up aplikasi lain)
+window.addEventListener("blur", () => {
+  document.body.classList.add("mode-tangkap-layar");
+});
+
+window.addEventListener("focus", () => {
+  document.body.classList.remove("mode-tangkap-layar");
+});
     }
   }
 });
